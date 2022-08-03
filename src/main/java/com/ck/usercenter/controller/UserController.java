@@ -2,9 +2,10 @@ package com.ck.usercenter.controller;
 
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ck.usercenter.common.BaseResponse;
 import com.ck.usercenter.common.ErrorCode;
-import com.ck.usercenter.utils.LazySingleton;
+import com.ck.usercenter.service.impl.UserServiceImpl;
 import com.ck.usercenter.utils.ResultUtils;
 import com.ck.usercenter.exception.BusinessException;
 import com.ck.usercenter.model.domain.User;
@@ -31,9 +32,11 @@ import static com.ck.usercenter.constant.UserConstant.*;
 
 @RestController
 @RequestMapping("/user")
-@CrossOrigin(origins = { "https://localhost:3030" })
-//        (origins = { "http://49.234.23.193" }, allowCredentials = "true")
+@CrossOrigin  (origins = { "https://localhost:3030" })
+// (origins = { "http://49.234.23.193" }, allowCredentials = "true")
+
 public class UserController {
+
 
     @Resource
     private UserService userService;
@@ -94,7 +97,7 @@ public class UserController {
 
     @GetMapping("/search")
     public BaseResponse<List<User>> searchUsers(String username, HttpServletRequest request){
-        if (!isAdmin(request)){
+        if (!userService.isAdmin(request)){
             throw new BusinessException(ErrorCode.NO_AUTH);
         }
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
@@ -115,18 +118,25 @@ public class UserController {
         return ResultUtils.success(userList);
     }
 
-    @GetMapping("/search/recommend")
-    public BaseResponse<List<User>> recommendUsers(HttpServletRequest request){
-        if (request == null){
-            throw new BusinessException(ErrorCode.NULL_ERROR);
-        }
-        List<User> userList = userService.recommendUsers(request);
+//    @GetMapping("/search/recommend")
+//    public BaseResponse<List<User>> recommendUsers(HttpServletRequest request){
+//        if (request == null){
+//            throw new BusinessException(ErrorCode.NULL_ERROR);
+//        }
+//        List<User> userList = userService.recommendUsers(request);
+//        return ResultUtils.success(userList);
+//    }
+
+    @GetMapping("/recommend")
+    public BaseResponse<Page<User>> recommendUsers(long pageSize, long pageNum, HttpServletRequest request){
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        Page<User> userList = userService.page(new Page<>(pageNum, pageSize), queryWrapper);
         return ResultUtils.success(userList);
     }
 
     @PostMapping("/delete")
     public BaseResponse<Boolean> deleteUsers(@RequestBody long id, HttpServletRequest request){
-        if (!isAdmin(request)){
+        if (!userService.isAdmin(request)){
             throw new BusinessException(ErrorCode.NO_AUTH);
         }
         if (id <= 0){
@@ -136,19 +146,18 @@ public class UserController {
         return ResultUtils.success(b);
     }
 
-
-    /**
-     * 是否为管理员
-     *
-     * @param request
-     * @return
-     */
-    private boolean isAdmin(HttpServletRequest request){
-        // 仅管理员权限
-        Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
-        User user = (User) userObj;
-        return user != null && user.getUserRole() == ADMIN_ROLE;
-
+    @PostMapping("/update")
+    public BaseResponse<Integer> updateUser(@RequestBody User user, HttpServletRequest request){
+        if (user == null){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        //TODO 补充一些校验逻辑，如果用户没有返回任何要更新的值，就直接报错
+        User loginUser = userService.getLoginUser(request);
+        int result = userService.updateUser(user, loginUser);
+        return ResultUtils.success(result);
     }
+
+
+
 
 }

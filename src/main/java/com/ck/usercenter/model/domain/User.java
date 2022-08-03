@@ -10,14 +10,14 @@ import lombok.Data;
  * 用户
  * @TableName user
  */
-@TableName(value ="user")
+@TableName(value ="testuser")
 @Data
 public class User implements Serializable {
     /**
-     * 用户昵称
+     * 用户ID
      */
     @TableId(type = IdType.AUTO)
-    private Long id;
+    private long id;
 
     /**
      * 用户昵称

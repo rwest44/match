@@ -22,7 +22,6 @@ public interface UserService extends IService<User> {
      *
      * @return 新用户id
      */
-
     long userRegister(String userAccount, String userPassword, String checkPassword, String planetCode);
 
     /**
@@ -33,6 +32,11 @@ public interface UserService extends IService<User> {
      */
     User userLogin(String userAccount, String userPassword, HttpServletRequest request);
 
+    /**
+     * 用户脱敏
+     * @param originUser
+     * @return
+     */
     User getSafetyUser(User originUser);
 
     /**
@@ -43,12 +47,20 @@ public interface UserService extends IService<User> {
     int userLogout(HttpServletRequest request);
 
     /**
-     * 根据标签搜索用户
+     * 根据标签搜索用户(SQL)
      *
      * @param tagNameList 用户要拥有的标签
      * @return
      */
     List<User> searchUsersByTags(List<String> tagNameList);
+
+    /**
+     * 根据标签搜索用户(Memory)
+     *
+     * @param tagNameList 用户要拥有的标签
+     * @return
+     */
+    List<User> searchUsersByTagsByMemory(List<String> tagNameList);
 
     /**
      * 判断是否重复
@@ -68,9 +80,39 @@ public interface UserService extends IService<User> {
     User loginUser(String userAccount, String encryptPassword);
 
     /**
+     * 返回用户登录态
+     * @param request
+     * @return
+     */
+    User getLoginUser(HttpServletRequest request);
+
+    /**
+     * 修改用户信息
+     * @param user
+     * @param loginUser
+     * @return
+     */
+    int updateUser(User user, User loginUser);
+
+    /**
      * 智能推荐伙伴
      * @param request
      * @return
      */
     List<User> recommendUsers(HttpServletRequest request);
+
+    /**
+     * 是否为管理员
+     *
+     * @param request
+     * @return
+     */
+    boolean isAdmin(HttpServletRequest request);
+
+    /**
+     * 是否为管理员
+     * @param loginUser
+     * @return
+     */
+    boolean isAdmin(User loginUser);
 }

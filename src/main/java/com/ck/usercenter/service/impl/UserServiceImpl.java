@@ -23,6 +23,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.ck.usercenter.constant.UserConstant.ADMIN_ROLE;
 import static com.ck.usercenter.constant.UserConstant.USER_LOGIN_STATE;
 
 /**
@@ -176,7 +177,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         return safetyUser;
     }
 
-
     /**
      * 用户注销
      *
@@ -248,6 +248,46 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         queryWrapper.eq("userPassword", encryptPassword);
         return userMapper.selectOne(queryWrapper);
 
+    }
+
+    /**
+     * 返回用户登录态
+     * @param request
+     * @return
+     */
+    @Override
+    public User getLoginUser(HttpServletRequest request) {
+        if (request == null){
+            throw new BusinessException(ErrorCode.NULL_ERROR, "用户登录态为空");
+        }
+        Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
+        if (userObj == null){
+            throw new BusinessException(ErrorCode.NOT_LOGIN);
+        }
+        return (User)userObj;
+    }
+
+    /**
+     * 修改用户信息
+     * @param user
+     * @param loginUser
+     * @return
+     */
+    @Override
+    public int updateUser(User user, User loginUser) {
+        long userId = user.getId();
+        if (userId <= 0){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        //仅管理员和用户本人可修改
+        if (!isAdmin(loginUser) && userId != loginUser.getId() ){
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+        User oldUser = userMapper.selectById(userId);
+        if (oldUser == null){
+            throw new BusinessException(ErrorCode.NULL_ERROR);
+        }
+        return userMapper.updateById(user);
     }
 
 
@@ -364,7 +404,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      * @return
      */
     @Deprecated
-    private List<User> searchUsersByTagsBySQL(List<String> tagNameList) {
+    public List<User> searchUsersByTagsByMemory(List<String> tagNameList) {
         if (CollectionUtils.isEmpty(tagNameList)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -383,10 +423,29 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
                 if (!tempTagNameSet.contains(tagName)) {
                     return false;
                 }
-            }
+        }
             return true;
         }).map(this::getSafetyUser).collect(Collectors.toList());
         return userList1;
+    }
+
+    /**
+     * 是否为管理员
+     *
+     * @param request
+     * @return
+     */
+    @Override
+    public boolean isAdmin(HttpServletRequest request){
+        // 仅管理员权限
+        Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
+        User user = (User) userObj;
+        return user != null && user.getUserRole() == ADMIN_ROLE;
+
+    }
+    @Override
+    public boolean isAdmin(User loginUser){
+        return loginUser != null && loginUser.getUserRole() == ADMIN_ROLE;
     }
 
 }
