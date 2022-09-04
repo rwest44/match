@@ -8,6 +8,7 @@ import com.ck.usercenter.common.ErrorCode;
 import com.ck.usercenter.exception.BusinessException;
 import com.ck.usercenter.model.domain.Team;
 import com.ck.usercenter.model.domain.User;
+import com.ck.usercenter.model.request.TeamAddRequest;
 import com.ck.usercenter.service.TeamService;
 import com.ck.usercenter.service.UserService;
 import com.ck.usercenter.utils.ResultUtils;
