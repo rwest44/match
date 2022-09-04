@@ -10,7 +10,7 @@ import lombok.Data;
  * 用户
  * @TableName user
  */
-@TableName(value ="testuser")
+@TableName(value ="user")
 @Data
 public class User implements Serializable {
     /**
