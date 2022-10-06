@@ -11,15 +11,6 @@ import java.util.concurrent.atomic.AtomicLong;
 public class LazySingleton {
     // 单例对象 ,加入volatile关键字进行修饰
     private static volatile LazySingleton loginCount;
-
-
-
-
-    //GitTest
-
-
-
-
     // 计数器
     private AtomicLong count = new AtomicLong(0);
 
