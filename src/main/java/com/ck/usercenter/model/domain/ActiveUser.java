@@ -7,17 +7,22 @@ import java.util.Date;
 import lombok.Data;
 
 /**
- * 用户
- * @TableName user
+ * 活跃用户
+ * @TableName user_active
  */
-@TableName(value ="user_test")
+@TableName(value ="user_active")
 @Data
-public class User implements Serializable {
+public class ActiveUser implements Serializable {
     /**
      * 用户ID
      */
     @TableId(type = IdType.AUTO)
     private long id;
+
+    /**
+     * 用户Id
+     */
+    private long userId;
 
     /**
      * 用户昵称
@@ -30,29 +35,9 @@ public class User implements Serializable {
     private String userAccount;
 
     /**
-     * 用户头像
+     * 星球编号
      */
-    private String avatarUrl;
-
-    /**
-     * 性别
-     */
-    private Byte gender;
-
-    /**
-     * 密码
-     */
-    private String userPassword;
-
-    /**
-     * 电话
-     */
-    private String phone;
-
-    /**
-     * 邮箱
-     */
-    private String email;
+    private String planetCode;
 
     /**
      * 状态 0 - 正常
@@ -60,14 +45,16 @@ public class User implements Serializable {
     private Integer userStatus;
 
     /**
+     * 上次登录时间
+     */
+    private Date lastLogin;
+
+    /**
      * 用户角色 0 - 普通用户 1 - 管理员
      */
     private Integer userRole;
 
-    /**
-     * 星球编号
-     */
-    private String planetCode;
+
     /**
      * 用户标签 json
      */
@@ -83,14 +70,7 @@ public class User implements Serializable {
      */
     private Date updateTime;
 
-    /**
-     * 是否删除
-     */
-    @TableLogic
-    private Byte isDelete;
 
-    @TableField(exist = false)
-    private Double SimilarDegree;
 
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;

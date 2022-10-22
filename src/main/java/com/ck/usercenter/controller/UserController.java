@@ -35,7 +35,7 @@ import static com.ck.usercenter.constant.UserConstant.*;
 @Slf4j
 @RestController
 @RequestMapping("/user")
-@CrossOrigin  (origins = { "https://localhost:3030" })
+@CrossOrigin  (origins = {"https://localhost:3000"})
 // (origins = { "http://49.234.23.193" }, allowCredentials = "true")
 
 public class UserController {
@@ -120,7 +120,7 @@ public class UserController {
         if (CollectionUtils.isEmpty(tagNameList)){
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        List<User> userList = userService.searchUsersByTags(tagNameList);
+        List<User> userList = userService.searchUsersByTagsByMemory(tagNameList);
         return ResultUtils.success(userList);
     }
 
@@ -148,7 +148,7 @@ public class UserController {
         userPage = userService.page(new Page<>(pageNum, pageSize), queryWrapper);
         //写缓存
         try {
-            valueOperations.set(redisKey, userPage, 1, TimeUnit.MINUTES);
+            valueOperations.set(redisKey, userPage, 1, TimeUnit.DAYS);
         } catch (Exception e) {
             log.error("redis set key error", e);
         }
@@ -191,8 +191,26 @@ public class UserController {
         if (num <= 0 || num > 20) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        User user = userService.getLoginUser(request);
-        return ResultUtils.success(userService.matchUsers(num, user));
+
+        User loginUser = userService.getLoginUser(request);
+        String redisKey = String.format("match:user:match:%s", loginUser.getId());
+        ValueOperations<String, Object> valueOperations = redisTemplate.opsForValue();
+
+        //如果有缓存，直接读缓存
+        List<User> matchedUser = (List<User>) valueOperations.get(redisKey);
+        if (matchedUser != null){
+            return ResultUtils.success(matchedUser);
+        }
+        //若无缓存，则调用接口
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        matchedUser = userService.matchUsers(num, loginUser);
+        //写缓存
+        try {
+            valueOperations.set(redisKey, matchedUser, 1, TimeUnit.DAYS);
+        } catch (Exception e) {
+            log.error("redis set key error", e);
+        }
+        return ResultUtils.success(matchedUser);
     }
 
 

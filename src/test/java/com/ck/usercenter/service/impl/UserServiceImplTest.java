@@ -27,8 +27,7 @@
 //    public void doInsertUsers(){
 //        StopWatch stopWatch = new StopWatch();
 //        stopWatch.start();
-//        final int INSERT_NUM = 100000;
-//        int batchSize = 2500;
+//        int batchSize = 10000;
 //        int j = 0;
 //        List<CompletableFuture<Void>> futureList = new ArrayList<>();
 //        for (int i = 0; i < 20; i++) {
@@ -36,8 +35,8 @@
 //            while(true) {
 //                j++;
 //                User user = new User();
-//                user.setUsername("假数据");
-//                user.setUserAccount("fakeData");
+//                user.setUsername("用户名-假数据");
+//                user.setUserAccount("userAccountFake");
 //                user.setAvatarUrl("https://636f-codenav-8grj8px727565176-1256524210.tcb.qcloud.la/img/logo.png");
 //                user.setGender((byte) 0);
 //                user.setUserPassword("12345678");
@@ -46,13 +45,14 @@
 //                user.setUserStatus(0);
 //                user.setUserRole(0);
 //                user.setPlanetCode("878787");
-//                user.setTags("[\"java\",\"mail\", \"dasan\"]");
+//                user.setTags("[\"female\", \"前端\", \"working\", \"Java\"]");
 //                userList.add(user);
 //                if (j % batchSize == 0){
 //                    break;
 //                }
 //            }
 //            //异步执行
+//            //异步任务，executorService是所制定的线程池
 //            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
 //                userService.saveBatch(userList, batchSize);
 //            }, executorService);

@@ -1,9 +1,12 @@
 package com.ck.usercenter.service.impl;
+import java.util.Date;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ck.usercenter.common.ErrorCode;
 import com.ck.usercenter.exception.BusinessException;
+import com.ck.usercenter.mapper.ActiveUserMapper;
+import com.ck.usercenter.model.domain.ActiveUser;
 import com.ck.usercenter.model.domain.User;
 import com.ck.usercenter.service.UserService;
 import com.ck.usercenter.mapper.UserMapper;
@@ -14,6 +17,7 @@ import com.google.gson.reflect.TypeToken;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.util.Pair;
+import org.springframework.beans.BeanUtils;
 import org.springframework.data.geo.Distance;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -47,6 +51,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Resource
     private UserMapper userMapper;
+
+    @Resource
+    private ActiveUserMapper activeUserMapper;
 
     @Override
     public long userRegister(String userAccount, String userPassword, String checkPassword, String planetCode) {
@@ -146,10 +153,26 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         //记录用户的登录态
         request.getSession().setAttribute(USER_LOGIN_STATE, safetyUser);
 
+        //网站计数器统计热度
         LazySingleton lazySingleton = LazySingleton.getInstance();
         lazySingleton.addCount();
-        log.info("用户：" + userAccount + " 登录成功，" + "当前网站共有：" + LazySingleton.getInstance().getCount() + " 个用户登录");
+        log.info("用户：" + userAccount + " 登录成功，" + "今日网站活跃数：" + LazySingleton.getInstance().getCount());
 
+        //获得activeUser对象
+        ActiveUser activeUser = new ActiveUser();
+        BeanUtils.copyProperties(safetyUser, activeUser);
+        activeUser.setUserId(safetyUser.getId());
+        activeUser.setLastLogin(new Date());
+
+        QueryWrapper<ActiveUser> queryWrapper = new QueryWrapper();
+        queryWrapper.eq("userId", safetyUser.getId());
+        //若活跃用户表中存在该用户，则更新上次登录时间
+        if (activeUserMapper.selectCount(queryWrapper) > 0){
+            activeUserMapper.updateById(activeUser);
+        }else{
+            //否则插入
+            activeUserMapper.insert(activeUser);
+        }
         return safetyUser;
     }
 
@@ -188,12 +211,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     public int userLogout(HttpServletRequest request) {
         //移除登录态
-        LazySingleton lazySingleton = LazySingleton.getInstance();
-        lazySingleton.reduceCount();
-        System.out.println("用户注销，当前网站共有：" + LazySingleton.getInstance().getCount() + " 个用户登录");
+//        LazySingleton lazySingleton = LazySingleton.getInstance();
+//        lazySingleton.reduceCount();
+//        System.out.println("用户注销，当前网站共有：" + LazySingleton.getInstance().getCount() + " 个用户登录");
         request.getSession().removeAttribute(USER_LOGIN_STATE);
-
-
         return 1;
     }
 
@@ -205,7 +226,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      * @param tagNameList
      * @return
      */
-    @Override
+    @Deprecated
     public List<User> searchUsersByTags(List<String> tagNameList) {
 
         if (CollectionUtils.isEmpty(tagNameList)) {
@@ -255,23 +276,25 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     /**
      * 返回用户登录态
+     *
      * @param request
      * @return
      */
     @Override
     public User getLoginUser(HttpServletRequest request) {
-        if (request == null){
+        if (request == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "用户登录态为空");
         }
         Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
-        if (userObj == null){
+        if (userObj == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN);
         }
-        return (User)userObj;
+        return (User) userObj;
     }
 
     /**
      * 修改用户信息
+     *
      * @param user
      * @param loginUser
      * @return
@@ -279,15 +302,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     public int updateUser(User user, User loginUser) {
         long userId = user.getId();
-        if (userId <= 0){
+        if (userId <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         //仅管理员和用户本人可修改
-        if (!isAdmin(loginUser) && userId != loginUser.getId() ){
+        if (!isAdmin(loginUser) && userId != loginUser.getId()) {
             throw new BusinessException(ErrorCode.NO_AUTH);
         }
         User oldUser = userMapper.selectById(userId);
-        if (oldUser == null){
+        if (oldUser == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR);
         }
         return userMapper.updateById(user);
@@ -295,6 +318,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
 
     @Override
+    //余弦相似度
     public List<User> recommendUsers(HttpServletRequest request) {
         if (request == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR);
@@ -310,7 +334,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
         //将json格式用户标签转换为String
         Gson gson = new Gson();
-        List<String> listUserTags = gson.fromJson(jsonUserTag, new TypeToken<List<String>>() {}.getType());
+        List<String> listUserTags = gson.fromJson(jsonUserTag, new TypeToken<List<String>>() {
+        }.getType());
         String userTags = String.join(",", listUserTags);
 
         //1.先查询所有用户
@@ -326,7 +351,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             if (StringUtils.isBlank(jsonTags)) {
                 break;
             }
-            List<String> listTags = gson.fromJson(jsonTags, new TypeToken<List<String>>() {}.getType());
+            List<String> listTags = gson.fromJson(jsonTags, new TypeToken<List<String>>() {
+            }.getType());
             String recommendTags = String.join(",", listTags);
 
             tempUser.setSimilarDegree(getSimilarDegree(userTags, recommendTags));
@@ -340,64 +366,64 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
         return recommendUsers;
 
-
     }
 
 
     /**
      * 余弦相似度计算算法
+     *
      * @param userTags
      * @param recommendTags
      * @return
      */
-        public Double getSimilarDegree (String userTags, String recommendTags){
+    public Double getSimilarDegree(String userTags, String recommendTags) {
 
-            //创建向量空间模型，使用map实现，主键为词项，值为长度为2的数组，存放着对应词项在字符串中的出现次数
-            Map<String, int[]> vectorSpace = new HashMap<>();
+        //创建向量空间模型，使用map实现，主键为词项，值为长度为2的数组，存放着对应词项在字符串中的出现次数
+        Map<String, int[]> vectorSpace = new HashMap<>();
 
-            //为了避免频繁产生局部变量，所以将itemCountArray声明在此
-            int[] itemCountArray = null;
+        //为了避免频繁产生局部变量，所以将itemCountArray声明在此
+        int[] itemCountArray = null;
 
-            //以空格为分隔符，分解字符串
-            String[] strArray = userTags.split(",");
-            for (int i = 0; i < strArray.length; ++i) {
-                if (vectorSpace.containsKey(strArray[i]))
-                    ++(vectorSpace.get(strArray[i])[0]);
-                else {
-                    itemCountArray = new int[2];
-                    itemCountArray[0] = 1;
-                    itemCountArray[1] = 0;
-                    vectorSpace.put(strArray[i], itemCountArray);
-                }
+        //以空格为分隔符，分解字符串
+        String[] strArray = userTags.split(",");
+        for (int i = 0; i < strArray.length; ++i) {
+            if (vectorSpace.containsKey(strArray[i]))
+                ++(vectorSpace.get(strArray[i])[0]);
+            else {
+                itemCountArray = new int[2];
+                itemCountArray[0] = 1;
+                itemCountArray[1] = 0;
+                vectorSpace.put(strArray[i], itemCountArray);
             }
-            strArray = recommendTags.split(",");
-            for (int i = 0; i < strArray.length; ++i) {
-                if (vectorSpace.containsKey(strArray[i]))
-                    ++(vectorSpace.get(strArray[i])[1]);
-                else {
-                    itemCountArray = new int[2];
-                    itemCountArray[0] = 0;
-                    itemCountArray[1] = 1;
-                    vectorSpace.put(strArray[i], itemCountArray);
-                }
-            }
-            //计算相似度
-            double vector1Modulo = 0.00;//向量1的模
-            double vector2Modulo = 0.00;//向量2的模
-            double vectorProduct = 0.00;//向量积
-            Iterator iter = vectorSpace.entrySet().iterator();
-            while (iter.hasNext()) {
-                Map.Entry entry = (Map.Entry) iter.next();
-                itemCountArray = (int[]) entry.getValue();
-                vector1Modulo += itemCountArray[0] * itemCountArray[0];
-                vector2Modulo += itemCountArray[1] * itemCountArray[1];
-                vectorProduct += itemCountArray[0] * itemCountArray[1];
-            }
-            vector1Modulo = Math.sqrt(vector1Modulo);
-            vector2Modulo = Math.sqrt(vector2Modulo);
-            //返回相似度
-            return (vectorProduct / (vector1Modulo * vector2Modulo));
         }
+        strArray = recommendTags.split(",");
+        for (int i = 0; i < strArray.length; ++i) {
+            if (vectorSpace.containsKey(strArray[i]))
+                ++(vectorSpace.get(strArray[i])[1]);
+            else {
+                itemCountArray = new int[2];
+                itemCountArray[0] = 0;
+                itemCountArray[1] = 1;
+                vectorSpace.put(strArray[i], itemCountArray);
+            }
+        }
+        //计算相似度
+        double vector1Modulo = 0.00;//向量1的模
+        double vector2Modulo = 0.00;//向量2的模
+        double vectorProduct = 0.00;//向量积
+        Iterator iter = vectorSpace.entrySet().iterator();
+        while (iter.hasNext()) {
+            Map.Entry entry = (Map.Entry) iter.next();
+            itemCountArray = (int[]) entry.getValue();
+            vector1Modulo += itemCountArray[0] * itemCountArray[0];
+            vector2Modulo += itemCountArray[1] * itemCountArray[1];
+            vectorProduct += itemCountArray[0] * itemCountArray[1];
+        }
+        vector1Modulo = Math.sqrt(vector1Modulo);
+        vector2Modulo = Math.sqrt(vector2Modulo);
+        //返回相似度
+        return (vectorProduct / (vector1Modulo * vector2Modulo));
+    }
 
 
     /**
@@ -406,7 +432,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      * @param tagNameList 用户要拥有的标签
      * @return
      */
-    @Deprecated
+
     public List<User> searchUsersByTagsByMemory(List<String> tagNameList) {
         if (CollectionUtils.isEmpty(tagNameList)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -426,7 +452,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
                 if (!tempTagNameSet.contains(tagName)) {
                     return false;
                 }
-        }
+            }
             return true;
         }).map(this::getSafetyUser).collect(Collectors.toList());
         return userList1;
@@ -435,20 +461,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     public List<User> matchUsers(long num, User loginUser) {
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        //只查询出id和标签，减少查询时间
         queryWrapper.select("id", "tags");
         queryWrapper.isNotNull("tags");
         List<User> userList = this.list(queryWrapper);
         String tags = loginUser.getTags();
         Gson gson = new Gson();
-        //Json字符串转化为String类型，用List接收
         List<String> tagList = gson.fromJson(tags, new TypeToken<List<String>>() {
         }.getType());
         // 用户列表的下标 => 相似度
-        List<Pair<User, Long>> list = new ArrayList<>();
+        LinkedList<Pair<User, Long>> list = new LinkedList<>();
         long maxDistance = 0;
-        int index = 0;
-        int maxDistanceIndex = 0;
         // 依次计算所有用户和当前用户的相似度
         for (int i = 0; i < userList.size(); i++) {
             User user = userList.get(i);
@@ -461,34 +483,56 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             }.getType());
             // 计算分数
             long distance = AlgorithmUtils.minDistance(tagList, userTagList);
-            if (list.size() <= 20){
-                if (distance > maxDistance){
-                    maxDistance = distance;
-                    maxDistanceIndex = index;
-                }
-                list.add(new Pair<>(user, distance));
-                index ++;
-            }
-            else {
-                if (distance > maxDistance){
+
+//            if (list.size() <= num - 1){
+//                if (list.size() == num - 1){
+//                    list.add(new Pair<>(user, distance));
+//                    Collections.sort(list, ((a, b) -> (int) (a.getValue() - b.getValue())));
+//                    maxDistance = list.getLast().getValue();
+//                    continue;
+//                }
+//                list.add(new Pair<>(user, distance));
+//            }
+//            else {
+//                if (distance >= maxDistance) continue;
+//                else {
+//                    for (int j = 0; j < list.size(); j++) {
+//                        if (distance <= list.get(j).getValue()) {
+//                            list.add(j, new Pair<>(user, distance));
+//                            list.removeLast();
+//                            maxDistance = list.getLast().getValue();
+//                        }
+//                    }
+//                }
+//            }
+
+
+            if (list.size() <= num - 1) {
+                if (list.size() == num - 1) {
+                    list.add(new Pair<>(user, distance));
+                    Collections.sort(list, ((a, b) -> (int) (a.getValue() - b.getValue())));
+                    maxDistance = list.getLast().getValue();
                     continue;
                 }
+                list.add(new Pair<>(user, distance));
+            } else {
+                if (distance > maxDistance) continue;
                 else {
-                    maxDistance = distance;
-                    list.remove(maxDistanceIndex);
-                    list.add(maxDistanceIndex, new Pair<>(user, distance));
+                    list.removeLast();
+                    list.add(new Pair<>(user, distance));
+                    Collections.sort(list, ((a, b) -> (int) (a.getValue() - b.getValue())));
+                    maxDistance = list.getLast().getValue();
                 }
             }
         }
+
         // 按编辑距离由小到大排序
         List<Pair<User, Long>> topUserPairList = list.stream()
                 .sorted((a, b) -> (int) (a.getValue() - b.getValue()))
                 .limit(num)
                 .collect(Collectors.toList());
         // 原本顺序的 userId 列表
-        List<Long> userIdList = topUserPairList.stream()
-                .map(pair -> pair.getKey()
-                        .getId()).collect(Collectors.toList());
+        List<Long> userIdList = topUserPairList.stream().map(pair -> pair.getKey().getId()).collect(Collectors.toList());
         QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
         userQueryWrapper.in("id", userIdList);
         // 1, 3, 2
@@ -505,11 +549,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         return finalUserList;
     }
 
-
-
-
-
-
     /**
      * 是否为管理员
      *
@@ -517,15 +556,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      * @return
      */
     @Override
-    public boolean isAdmin(HttpServletRequest request){
+    public boolean isAdmin(HttpServletRequest request) {
         // 仅管理员权限
         Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
         User user = (User) userObj;
         return user != null && user.getUserRole() == ADMIN_ROLE;
 
     }
+
     @Override
-    public boolean isAdmin(User loginUser){
+    public boolean isAdmin(User loginUser) {
         return loginUser != null && loginUser.getUserRole() == ADMIN_ROLE;
     }
 

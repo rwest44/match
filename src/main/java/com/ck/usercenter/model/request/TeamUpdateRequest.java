@@ -13,8 +13,8 @@ import java.util.Date;
 @Data
 public class TeamUpdateRequest implements Serializable {
 
-    private static final long serialVersionUID = 3191241716373120793L;
 
+    private static final long serialVersionUID = 5923236288815655220L;
     /**
      * id
      */

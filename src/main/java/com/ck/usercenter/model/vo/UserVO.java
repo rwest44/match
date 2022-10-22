@@ -10,6 +10,8 @@ import java.util.Date;
  */
 @Data
 public class UserVO implements Serializable {
+
+    private static final long serialVersionUID = -1751384157249713909L;
     /**
      * id
      */
@@ -75,5 +77,4 @@ public class UserVO implements Serializable {
      */
     private String planetCode;
 
-    private static final long serialVersionUID = 1L;
 }
