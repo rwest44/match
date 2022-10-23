@@ -35,8 +35,8 @@ import static com.ck.usercenter.constant.UserConstant.*;
 @Slf4j
 @RestController
 @RequestMapping("/user")
-@CrossOrigin  (origins = {"https://localhost:3000"})
-// (origins = { "http://49.234.23.193" }, allowCredentials = "true")
+//@CrossOrigin  (origins = {"https://localhost:3000"})
+@CrossOrigin(origins = { "http://49.234.23.193", "https://localhost:3000" }, allowCredentials = "true")
 
 public class UserController {
 
@@ -56,11 +56,11 @@ public class UserController {
         String userAccount = userRegisterRequest.getUserAccount();
         String userPassword = userRegisterRequest.getUserPassword();
         String checkPassword = userRegisterRequest.getCheckPassword();
-        String planetCode = userRegisterRequest.getPlanetCode();
-        if (StringUtils.isAllBlank(userAccount, userPassword, checkPassword, planetCode)){
+//        String planetCode = userRegisterRequest.getPlanetCode();
+        if (StringUtils.isAllBlank(userAccount, userPassword, checkPassword)){
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        long result = userService.userRegister(userAccount, userPassword, checkPassword, planetCode);
+        long result = userService.userRegister(userAccount, userPassword, checkPassword);
         return ResultUtils.success(result);
     }
 
@@ -173,6 +173,7 @@ public class UserController {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         //TODO 补充一些校验逻辑，如果用户没有返回任何要更新的值，就直接报错
+
         User loginUser = userService.getLoginUser(request);
         int result = userService.updateUser(user, loginUser);
         return ResultUtils.success(result);

@@ -56,10 +56,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     private ActiveUserMapper activeUserMapper;
 
     @Override
-    public long userRegister(String userAccount, String userPassword, String checkPassword, String planetCode) {
+    public long userRegister(String userAccount, String userPassword, String checkPassword) {
 
         //校验
-        if (StringUtils.isAnyBlank(userAccount, userPassword, checkPassword, planetCode)) {
+        if (StringUtils.isAnyBlank(userAccount, userPassword, checkPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
         }
         if (userAccount.length() < 4) {
@@ -68,9 +68,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if (userPassword.length() < 8 || checkPassword.length() < 8) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户密码过短");
         }
-        if (planetCode.length() > 5) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "星球编号过长");
-        }
+//        if (planetCode.length() > 5) {
+//            throw new BusinessException(ErrorCode.PARAMS_ERROR, "星球编号过长");
+//        }
         //账号不能包含特殊字符
         String validPattern = "[`~!@#$%^&()+=|{}':;',\\\\[\\\\].<>/?~！@#￥%……&（）——+|{}【】‘；：”“’。，、？]";
         Matcher matcher = Pattern.compile(validPattern).matcher(userAccount);
@@ -96,9 +96,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 //        queryWrapper = new QueryWrapper<>();
 //        queryWrapper.eq("planetCode", planetCode);
 //        count = userMapper.selectCount(queryWrapper);
-        if (ifRepeat("planetCode", planetCode)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "星球编号已存在");
-        }
+//        if (ifRepeat("planetCode", planetCode)) {
+//            throw new BusinessException(ErrorCode.PARAMS_ERROR, "星球编号已存在");
+//        }
 
         // 加密
         String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
@@ -107,7 +107,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         User user = new User();
         user.setUserAccount(userAccount);
         user.setUserPassword(encryptPassword);
-        user.setPlanetCode(planetCode);
+//        user.setPlanetCode(planetCode);
         boolean saveResult = this.save(user);
         if (!saveResult) {
             throw new BusinessException(ErrorCode.FAIL, "插入数据失败");
