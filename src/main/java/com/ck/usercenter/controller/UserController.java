@@ -35,9 +35,6 @@ import static com.ck.usercenter.constant.UserConstant.*;
 @Slf4j
 @RestController
 @RequestMapping("/user")
-//@CrossOrigin  (origins = {"https://localhost:3000"})
-@CrossOrigin(origins = { "http://49.234.23.193", "https://localhost:3000" }, allowCredentials = "true")
-
 public class UserController {
 
 
@@ -154,6 +151,7 @@ public class UserController {
         }
         return ResultUtils.success(userPage);
     }
+
 
     @PostMapping("/delete")
     public BaseResponse<Boolean> deleteUsers(@RequestBody long id, HttpServletRequest request){
