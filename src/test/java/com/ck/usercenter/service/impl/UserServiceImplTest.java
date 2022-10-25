@@ -25,7 +25,7 @@
 //    public void doInsertUsers(){
 //        StopWatch stopWatch = new StopWatch();
 //        stopWatch.start();
-//        int batchSize = 10000;
+//        int batchSize = 1000;
 //        int j = 0;
 //        List<CompletableFuture<Void>> futureList = new ArrayList<>();
 //        for (int i = 0; i < 20; i++) {
@@ -43,7 +43,7 @@
 //                user.setUserStatus(0);
 //                user.setUserRole(0);
 //                user.setPlanetCode("878787");
-//                user.setTags("[\"Java\", \"C++\", \"working\", \"female\"]");
+//                user.setTags("[\"C++\", \"算法\", \"working\", \"female\"]");
 //                userList.add(user);
 //                if (j % batchSize == 0){
 //                    break;

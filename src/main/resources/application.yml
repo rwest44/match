@@ -25,6 +25,7 @@ server:
   port: 8080
   servlet:
     context-path: /api
+    #项目上线时把下面三行注释
     session:
       cookie:
         domain: localhost

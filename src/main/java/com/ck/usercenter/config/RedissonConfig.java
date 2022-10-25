@@ -27,8 +27,8 @@ public class RedissonConfig {
         // 1. 创建配置
         Config config = new Config();
         String redisAddress = String.format("redis://%s:%s", host, port);
-        config.useSingleServer().setAddress(redisAddress).setDatabase(3);
-//                .setPassword("15860057952ck");
+        //若redis无密码则将密码删除
+        config.useSingleServer().setAddress(redisAddress).setDatabase(0).setPassword("15860057952ck");
 
         //2. 创建实例
         RedissonClient redisson = Redisson.create(config);
