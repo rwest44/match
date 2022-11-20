@@ -95,6 +95,7 @@ public class TeamController {
         }
         boolean isAdmin = userService.isAdmin(request);
         List<TeamUserVO> teamList = teamService.listTeams(teamQuery, isAdmin);
+        //只留下队伍id
         final List<Long> teamIdList = teamList.stream().map(TeamUserVO::getId).collect(Collectors.toList());
         // 判断当前用户是否已加入队伍
         QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
@@ -103,8 +104,9 @@ public class TeamController {
             userTeamQueryWrapper.eq("userId", loginUser.getId());
             userTeamQueryWrapper.in("teamId", teamIdList);
             List<UserTeam> userTeamList = userTeamService.list(userTeamQueryWrapper);
-            // 已加入的队伍 id 集合
+            // 该用户已加入的队伍 id 集合
             Set<Long> hasJoinTeamIdSet = userTeamList.stream().map(UserTeam::getTeamId).collect(Collectors.toSet());
+            //在原先查出的所有队伍id集合中，设置setHasJoin字段
             teamList.forEach(team -> {
                 boolean hasJoin = hasJoinTeamIdSet.contains(team.getId());
                 team.setHasJoin(hasJoin);
@@ -116,6 +118,8 @@ public class TeamController {
         List<UserTeam> userTeamList = userTeamService.list(userTeamJoinQueryWrapper);
         //分组 ：teamId =》 加入该队伍的用户列表
         Map<Long, List<UserTeam>> teamIdUserTeamList = userTeamList.stream().collect(Collectors.groupingBy(UserTeam::getTeamId));
+        //getOrDefault(Object key, V defaultValue):当Map集合中有这个key时，就使用这个key对应的value值，如果没有就使用默认值defaultValue
+        //在原先查出的所有队伍id集合中，设置HasJoinNum字段，.size()获取列表的个数
         teamList.forEach(team -> team.setHasJoinNum(teamIdUserTeamList.getOrDefault(team.getId(), new ArrayList<>()).size()));
         return ResultUtils.success(teamList);
     }

@@ -6,7 +6,7 @@ import java.util.Objects;
 /**
  * 算法工具类
  *
- * @author yupi
+ * @author ck
  */
 public class AlgorithmUtils {
 

@@ -239,7 +239,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
         List<User> userList = userMapper.selectList(queryWrapper);
         return userList.stream().map(this::getSafetyUser).collect(Collectors.toList());
-
     }
 
 
@@ -432,7 +431,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      * @param tagNameList 用户要拥有的标签
      * @return
      */
-
     public List<User> searchUsersByTagsByMemory(List<String> tagNameList) {
         if (CollectionUtils.isEmpty(tagNameList)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);

@@ -130,6 +130,7 @@ public class UserController {
 //        return ResultUtils.success(userList);
 //    }
 
+    //首页自动推荐
     @GetMapping("/recommend")
     public BaseResponse<Page<User>> recommendUsers(long pageSize, long pageNum, HttpServletRequest request) {
         User loginUser = userService.getLoginUser(request);
