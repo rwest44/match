@@ -1,6 +1,7 @@
 package com.ck.usercenter.service.impl;
 import java.util.Date;
 
+import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ck.usercenter.common.ErrorCode;
@@ -14,11 +15,11 @@ import com.ck.usercenter.utils.AlgorithmUtils;
 import com.ck.usercenter.utils.LazySingleton;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.alibaba.fastjson.JSONArray;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.util.Pair;
 import org.springframework.beans.BeanUtils;
-import org.springframework.data.geo.Distance;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.DigestUtils;
@@ -193,6 +194,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         safetyUser.setUserAccount(originUser.getUserAccount());
         safetyUser.setAvatarUrl(originUser.getAvatarUrl());
         safetyUser.setGender(originUser.getGender());
+        safetyUser.setIntroduce(originUser.getIntroduce());
         safetyUser.setPhone(originUser.getPhone());
         safetyUser.setEmail(originUser.getEmail());
         safetyUser.setUserRole(originUser.getUserRole());
@@ -312,6 +314,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if (oldUser == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR);
         }
+        if (user.getTags() != null){
+            List<String> tagsList = Arrays.asList(user.getTags().split(","));
+            JSONArray tagsJsonArray = JSONArray.parseArray(JSON.toJSONString(tagsList));
+            user.setTags(tagsJsonArray.toString());
+        }
+
         return userMapper.updateById(user);
     }
 

@@ -16,6 +16,7 @@ import com.ck.usercenter.model.request.TeamJoinRequest;
 import com.ck.usercenter.model.request.TeamQuitRequest;
 import com.ck.usercenter.model.request.TeamUpdateRequest;
 import com.ck.usercenter.model.vo.TeamUserVO;
+import com.ck.usercenter.model.vo.UserVO;
 import com.ck.usercenter.service.TeamService;
 import com.ck.usercenter.service.UserService;
 import com.ck.usercenter.service.UserTeamService;
@@ -116,6 +117,21 @@ public class TeamController {
         QueryWrapper<UserTeam> userTeamJoinQueryWrapper = new QueryWrapper<>();
         userTeamJoinQueryWrapper.in("teamId", teamIdList);
         List<UserTeam> userTeamList = userTeamService.list(userTeamJoinQueryWrapper);
+
+        //hasJoinUserIdList里只留下加入队伍用户的id
+        List<Long> hasJoinUserIdList = userTeamList.stream().map(UserTeam::getUserId).collect(Collectors.toList());
+        QueryWrapper<User> hasJoinTeamUserQueryWrapper = new QueryWrapper<>();
+        hasJoinTeamUserQueryWrapper.in("id", hasJoinUserIdList);
+        List<User> hasJoinUserList = userService.list(hasJoinTeamUserQueryWrapper);
+        List<UserVO> hasJoinUserVOList = new ArrayList<>();
+        for (User user : hasJoinUserList){
+            UserVO userVO = new UserVO();
+            //脱敏
+            BeanUtils.copyProperties(user, userVO);
+            hasJoinUserVOList.add(userVO);
+        }
+        teamList.forEach(userVO -> userVO.setHasJoinUserList(hasJoinUserVOList));
+
         //分组 ：teamId =》 加入该队伍的用户列表
         Map<Long, List<UserTeam>> teamIdUserTeamList = userTeamList.stream().collect(Collectors.groupingBy(UserTeam::getTeamId));
         //getOrDefault(Object key, V defaultValue):当Map集合中有这个key时，就使用这个key对应的value值，如果没有就使用默认值defaultValue
@@ -188,6 +204,7 @@ public class TeamController {
         User loginUser = userService.getLoginUser(request);
         teamQuery.setUserId(loginUser.getId());
         List<TeamUserVO> teamList = teamService.listTeams(teamQuery, true);
+        teamList.forEach(team -> team.setHasJoin(true));
         return ResultUtils.success(teamList);
     }
 
@@ -220,6 +237,7 @@ public class TeamController {
         List<Long> idList = new ArrayList<>(listMap.keySet());
         teamQuery.setIdList(idList);
         List<TeamUserVO> teamList = teamService.listTeams(teamQuery, true);
+        teamList.forEach(team -> team.setHasJoin(true));
         return ResultUtils.success(teamList);
     }
 }
